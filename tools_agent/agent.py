@@ -111,7 +111,7 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
         "openai:": "OPENAI_API_KEY",
         "anthropic:": "ANTHROPIC_API_KEY",
         "google:": "GOOGLE_API_KEY",
-        "gcore:": "GCORE_LLM_API_KEY",   # <- for your Gcore chat endpoint
+        "gcore:": "QWEN_LLM_API_KEY",   # <- for your Gcore chat endpoint
     }
     key_name = next((key for prefix, key in model_to_key.items()
                      if model_name_l.startswith(prefix)), None)

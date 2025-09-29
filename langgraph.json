@@ -1,11 +1,13 @@
 {
+  "$schema": "https://langgra.ph/schema.json",
   "dependencies": ["."],
+  "python_paths": ["."],
   "graphs": {
-    "agent": "./tools_agent/agent.py:graph"
+    "agent": "tools_agent.agent:graph"
+  },
+  "auth": {
+    "path": "tools_agent.security.auth:auth"
   },
   "env": ".env",
-  "python_version": "3.11",
-  "auth": {
-    "path": "./tools_agent/security/auth.py:auth"
-  }
+  "python_version": "3.11"
 }
