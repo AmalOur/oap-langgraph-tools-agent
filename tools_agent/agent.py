@@ -135,6 +135,30 @@ def get_connection_overrides(model_name: str, config: RunnableConfig):
         return base_url, default_headers
     return None, None
 
+def resolve_model_and_provider(model_name: str):
+    """
+    Returns (clean_model_name, model_provider) for init_chat_model.
+    We keep our own prefixes for selection, but we give init_chat_model
+    what it expects.
+    """
+    if not model_name:
+        return None, None
+    lower = model_name.lower()
+
+    # Your OpenAI-compatible Gcore endpoint
+    if lower.startswith("gcore:"):
+        return model_name.split(":", 1)[1], "openai"
+
+    # Native providers (examples)
+    if lower.startswith("openai:"):
+        return model_name.split(":", 1)[1], "openai"
+    if lower.startswith("anthropic:"):
+        return model_name.split(":", 1)[1], "anthropic"
+    if lower.startswith("google:"):
+        return model_name.split(":", 1)[1], "google-genai"
+
+    # No prefix → if it’s an OpenAI-compatible custom, pass provider explicitly
+    return model_name, None
 
 # -------------------- GRAPH FACTORY --------------------
 async def graph(config: RunnableConfig):
@@ -205,8 +229,9 @@ async def graph(config: RunnableConfig):
     api_key = get_api_key_for_model(cfg.model_name, config) or "No token found"
     base_url, default_headers = get_connection_overrides(cfg.model_name, config)
 
-    model = init_chat_model(
-        cfg.model_name,
+    clean_model, provider = resolve_model_and_provider(cfg.model_name)
+
+    kwargs = dict(
         temperature=cfg.temperature,
         max_tokens=cfg.max_tokens,
         api_key=api_key,
@@ -214,9 +239,12 @@ async def graph(config: RunnableConfig):
         default_headers=default_headers,
     )
 
-    return create_react_agent(
-        prompt=cfg.system_prompt + UNEDITABLE_SYSTEM_PROMPT,
-        model=model,
-        tools=tools,
-        config_schema=GraphConfigPydantic,
-    )
+    # If provider can’t be inferred, pass it explicitly.
+    # For your Gcore case, provider will be "openai".
+    if provider:
+        kwargs["model_provider"] = provider
+    else:
+        # still ambiguous? default to openai if you know it’s OpenAI-compatible
+        kwargs["model_provider"] = "openai"
+
+    model = init_chat_model(clean_model, **kwargs)
