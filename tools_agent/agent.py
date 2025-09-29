@@ -38,15 +38,16 @@ class MCPConfig(BaseModel):
 class GraphConfigPydantic(BaseModel):
     # IMPORTANT: use a provider prefix that your helpers recognize, e.g. "gcore:"
     model_name: Optional[str] = Field(
-        default="Qwen/Qwen3-30B-A3B",
+        # use the prefix so get_connection_overrides(...) runs
+        default="gcore:Qwen/Qwen3-30B-A3B",
         metadata={
             "x_oap_ui_config": {
                 "type": "select",
                 "label": "Chat model",
                 "description": "OpenAI-compatible chat model",
-                "default": "Qwen/Qwen3-30B-A3B",
+                "default": "gcore:Qwen/Qwen3-30B-A3B",
                 "options": [
-                    {"label": "Qwen3-30B-A3B (Gcore)", "value": "Qwen/Qwen3-30B-A3B"},
+                    {"label": "Qwen3-30B-A3B (Gcore)", "value": "gcore:Qwen/Qwen3-30B-A3B"},
                 ],
             }
         },
@@ -228,7 +229,6 @@ async def graph(config: RunnableConfig):
     # ---- build chat model with overrides ----
     api_key = get_api_key_for_model(cfg.model_name, config) or "No token found"
     base_url, default_headers = get_connection_overrides(cfg.model_name, config)
-
     clean_model, provider = resolve_model_and_provider(cfg.model_name)
 
     kwargs = dict(
@@ -237,14 +237,15 @@ async def graph(config: RunnableConfig):
         api_key=api_key,
         base_url=base_url,
         default_headers=default_headers,
+        model_provider=provider or "openai",
     )
 
-    # If provider can’t be inferred, pass it explicitly.
-    # For your Gcore case, provider will be "openai".
-    if provider:
-        kwargs["model_provider"] = provider
-    else:
-        # still ambiguous? default to openai if you know it’s OpenAI-compatible
-        kwargs["model_provider"] = "openai"
-
     model = init_chat_model(clean_model, **kwargs)
+
+    # ✅ RETURN THE GRAPH HERE
+    return create_react_agent(
+        prompt=cfg.system_prompt + UNEDITABLE_SYSTEM_PROMPT,
+        model=model,
+        tools=tools,
+        config_schema=GraphConfigPydantic,
+    )
