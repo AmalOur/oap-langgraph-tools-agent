@@ -48,37 +48,19 @@ class MCPConfig(BaseModel):
 
 
 class GraphConfigPydantic(BaseModel):
+    api_key = get_api_key_for_model(cfg.model_name, config)
+    base_url, default_headers = get_connection_overrides(cfg.model_name, config)
+
     model_name: Optional[str] = Field(
-        default="openai:gpt-4o",
+        default="gcore/qwen3-30b-a3b",
         metadata={
             "x_oap_ui_config": {
                 "type": "select",
-                "default": "openai:gpt-4o",
-                "description": "The model to use in all generations",
+                "label": "Chat model",
+                "description": "OpenAI-compatible chat model",
+                "default": "gcore/qwen3-30b-a3b",
                 "options": [
-                    {
-                        "label": "Claude Sonnet 4",
-                        "value": "anthropic:claude-sonnet-4-0",
-                    },
-                    {
-                        "label": "Claude 3.7 Sonnet",
-                        "value": "anthropic:claude-3-7-sonnet-latest",
-                    },
-                    {
-                        "label": "Claude 3.5 Sonnet",
-                        "value": "anthropic:claude-3-5-sonnet-latest",
-                    },
-                    {
-                        "label": "Claude 3.5 Haiku",
-                        "value": "anthropic:claude-3-5-haiku-latest",
-                    },
-                    {"label": "o4 mini", "value": "openai:o4-mini"},
-                    {"label": "o3", "value": "openai:o3"},
-                    {"label": "o3 mini", "value": "openai:o3-mini"},
-                    {"label": "GPT 4o", "value": "openai:gpt-4o"},
-                    {"label": "GPT 4o mini", "value": "openai:gpt-4o-mini"},
-                    {"label": "GPT 4.1", "value": "openai:gpt-4.1"},
-                    {"label": "GPT 4.1 mini", "value": "openai:gpt-4.1-mini"},
+                    {"label": "Qwen3-30B-A3B (Gcore)", "value": "gcore/qwen3-30b-a3b"},
                 ],
             }
         },
@@ -154,7 +136,8 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
     model_to_key = {
         "openai:": "OPENAI_API_KEY",
         "anthropic:": "ANTHROPIC_API_KEY", 
-        "google": "GOOGLE_API_KEY"
+        "google": "GOOGLE_API_KEY",
+        "qwen": "QWEN_API_KEY"
     }
     key_name = next((key for prefix, key in model_to_key.items() 
                     if model_name.startswith(prefix)), None)
@@ -165,6 +148,26 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
         return api_keys[key_name]
     # Fallback to environment variable
     return os.getenv(key_name)
+
+def get_connection_overrides(model_name: str, config: RunnableConfig):
+    """
+    Retourne (base_url, default_headers) pour init_chat_model,
+    ou (None, None) si rien à surcharger.
+    """
+    model_name_l = model_name.lower()
+
+    # Si tu veux gérer plusieurs providers, mets un dict ici
+    if model_name_l.startswith("gcore:"):
+        # base_url OpenAI-compatible de ton chat model
+        base_url = "https://inference-instance-qwen3-30b-ust2hkbr.ai.gcore.dev/v1"
+
+        # récupère la bonne API key (via OAP apiKeys ou env)
+        api_key = get_api_key_for_model(model_name, config) or ""
+
+        default_headers = {"X-API-Key": api_key} if api_key else None
+        return base_url, default_headers
+
+    return None, None
 
 
 async def graph(config: RunnableConfig):
