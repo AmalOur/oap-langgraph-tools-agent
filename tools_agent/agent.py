@@ -38,15 +38,15 @@ class MCPConfig(BaseModel):
 class GraphConfigPydantic(BaseModel):
     # IMPORTANT: use a provider prefix that your helpers recognize, e.g. "gcore:"
     model_name: Optional[str] = Field(
-        default="gcore:Qwen/Qwen3-30B-A3B",
+        default="Qwen/Qwen3-30B-A3B",
         metadata={
             "x_oap_ui_config": {
                 "type": "select",
                 "label": "Chat model",
                 "description": "OpenAI-compatible chat model",
-                "default": "gcore:Qwen/Qwen3-30B-A3B",
+                "default": "Qwen/Qwen3-30B-A3B",
                 "options": [
-                    {"label": "Qwen3-30B-A3B (Gcore)", "value": "gcore:Qwen/Qwen3-30B-A3B"},
+                    {"label": "Qwen3-30B-A3B (Gcore)", "value": "Qwen/Qwen3-30B-A3B"},
                 ],
             }
         },
