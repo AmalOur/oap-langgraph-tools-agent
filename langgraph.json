@@ -5,9 +5,6 @@
   "graphs": {
     "agent": "tools_agent.agent:graph"
   },
-  "auth": {
-    "path": "tools_agent.security.auth:auth"
-  },
   "env": ".env",
   "python_version": "3.11"
 }
